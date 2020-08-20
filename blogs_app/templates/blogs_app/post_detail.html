@@ -1,27 +1,84 @@
 
 {% extends "blogs_app/base.html" %}
+{% load crispy_forms_tags %}
 {% block content %}
 
 	<article class="media content-section">
-    <img class="rounded-circle article-img" src="{{ object.author.profile.image.url }}">
+    <img class="rounded-circle article-img" src="{{ post.author.profile.image.url }}">
 		<div class="media-body">
         <div class="article-metadata">
-          <a class="mr-2" href="{% url 'user-posts' object.author.username %}">{{ object.author }}</a>
-          <small class="text-muted">{{ object.date_posted | date:"F d, Y" }}</small>
-          {% if object.author == user %}
+          <a class="mr-2" href="{% url 'user-posts' post.author.username %}">{{ post.author }}</a>
+          <small class="text-muted">{{ post.date_posted | date:"F d, Y" }}</small>
+
+          {% if post.author == user %}
             <div>
               <!-- 'btn-sm' button small , 'mt-1' margin top 1, 'mb-1' margin bottom 1
               'btn-secondary' little muted button -->
-            <a class="btn bn-secondary btn-sm mt-1 mb-1" href="{% url 'post-update' object.id %}">update</a>
-            <a class="btn bn-danger btn-sm mt-1 mb-1" href="{% url 'post-delete' object.id %}">Delete</a>
+            <a class="btn btn-secondary btn-sm mt-1 mb-1" href="{% url 'post-update' post.id %}">update</a>
+            <a class="btn btn-danger btn-sm mt-1 mb-1" href="{% url 'post-delete' post.id %}">Delete</a>
             
             </div>
           {% endif %}
+
         </div>
         
-        <h2 class="article-title">{{ object.title }}</h2>
-        <p class="article-content">{{ object.content }}</p>
+        <h2 class="article-title">{{ post.title }}</h2>
+        <p class="article-content">{{ post.content }}</p>
+
+        <form  method="POST">
+        {% csrf_token %}
+
+        {% if user_liked_post %}
+          <button type="submit" name="unlike_button" value="{{1}}" class="btn btn-primary btn-sm" >Unlike
+          </button>
+          <small class="text-muted">You liked this post</small>
+          <small class="ml-4">Total likes {{post_likes}}</small>
+        
+        {% else %}
+          <button type="submit" name="like_button" value="{{1}}" class="btn btn-primary btn-sm" >Like
+          </button>
+          <small class="ml-4">Total likes {{post_likes}}</small>
+        {% endif %}
+
+      </form>
+
     </div>
+
   </article>
 
+
+
+  
+  <div class="content-section">
+
+    <legend class="border-bottom">Comments:</legend>
+
+    {% if user.is_authenticated %}
+
+      <form method="POST" >
+        {% csrf_token %}
+        
+        <fieldset class="form-group">
+          <img class="img-thumbnail article-img" src="{{ user.profile.image.url }}">{{ form|crispy }}
+          
+        
+        </fieldset>
+        <div class="form-group">
+          <button name="comment_button" value="{{1}}" class="btn btn-outline-info" type="submit">Comment</button>
+        </div>
+      </form>
+    {% else %}
+      <div>
+        <a class="mb-2 mt-1" href="{% url 'login' %}">Login</a> to comment.<br><br>
+      </div>
+    {% endif %}
+    
+    {% for cmnt in comments_list %}
+    <img class="img-thumbnail article-img" src="{{ cmnt.commentator.profile.image.url }}">
+    <a class="mr-2" >{{ cmnt.commentator }}</a>
+      <p class="article-content">{{ cmnt.comment }}</p>
+      <hr>
+    {% endfor %}
+
+  </div>
 {% endblock content %}

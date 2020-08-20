@@ -33,6 +33,14 @@
             <div class="navbar-nav mr-auto">
               <a class="nav-item nav-link" href="{% url 'blog-home' %}">Home</a>
               <a class="nav-item nav-link" href="{% url 'blog-about' %}">About</a>
+              
+
+              <form method="GET" action="{% url 'post-search' %}" class="form-inline mt-2 mt-md-0">
+                <input class="form-control mr-sm-2" type="search" id="search" name="search"placeholder="Search" aria-label="Search">
+                
+              </form>
+
+
             </div>
 
             <!--Navbar Right Side -->
