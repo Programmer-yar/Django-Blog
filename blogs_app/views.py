@@ -1,5 +1,7 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.views.generic import ( 
 	ListView,
 	DetailView,
@@ -8,7 +10,13 @@ from django.views.generic import (
 	DeleteView 
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from .models import post
+
+from .models import Post, Comment
+from .modules import Search_Function
+from .forms import CommentForm
+
+
+
 
 
 #Function based views
@@ -17,33 +25,106 @@ def home(request):
 
 	#Third argument "context" is used to pass information to template
 	return render(request, 'blogs_app/home.html', context)
-	#contextual meaning of 'render' is to return back	
 	
 #Class based Views
 class PostListView(ListView):
-	model = post   #This variable stores what model to query in order to create the list
+	model = Post   #This variable stores what model to query in order to create the list
 	template_name = 'blogs_app/home.html' #app_name/model_viewtype.html
 	context_object_name = 'posts'
 	ordering = ['-date_posted']
 	paginate_by = 5
 
 class UserPostListView(ListView):
-	model = post   #This variable stores what model to query in order to create the list
+	model = Post   #This variable stores what model to query in order to create the list
 	template_name = 'blogs_app/user_posts.html' 
-	context_object_name = 'posts'
+	context_object_name = 'posts'  
 	#ordering = ['-date_posted']  overriden by get_query_set
 	paginate_by = 5
 
+	"""Positional and keyword arguments (that are captured in url patterns)
+	 are assigned to args and kwargs respectively"""
 	def get_queryset(self):
 		user = get_object_or_404(User, username=self.kwargs.get('username'))
-		return post.objects.filter(author=user).order_by('-date_posted')
+		return Post.objects.filter(author=user).order_by('-date_posted')
 
+
+#Multiple Inheritance is not possible for (Detail and Create) class based views
+# Because both classes expect different template names
+def PostDetail(request, pk):
+
+	post = Post.objects.get(id=pk)
+	current_logged_in_user = request.user
+	comments_list = Comment.objects.filter(blog=post).order_by('-date_added')
+	post_likes = post.likes.count()
+	post_num = pk
+
+	if current_logged_in_user in post.likes.all():
+		user_liked_post = True
+	else:
+		user_liked_post = False
+	
+	#The below if statement handles multiple forms seperatly
+	# the like buttons and comment form
+	if request.method == 'POST':
+		
+		if 'like_button' in request.POST:
+			post.likes.add(current_logged_in_user)
+			return redirect('post-detail', pk=post_num)
+
+		elif request.POST.get('unlike_button'):
+			post.likes.remove(current_logged_in_user)
+			return redirect('post-detail', pk=post_num)
+
+		elif 'comment_button' in request.POST:
+
+			form = CommentForm(request.POST)
+			if form.is_valid():
+				new_comment = form.save(commit=False)
+				new_comment.commentator = current_logged_in_user
+				new_comment.blog = post 
+				new_comment.save()
+				return redirect('post-detail', pk=post_num) 
+
+	else:
+		form = CommentForm() 
+
+	context = {'post':post, 'comments_list':comments_list, 'post_likes':post_likes,
+			   'user_liked_post':user_liked_post, 'form':form }
+
+	return render(request, 'blogs_app/post_detail.html', context)
+
+#The below class based view was replaced by "PostDetail" function based view 
 class PostDetailView(DetailView):
-	model = post
+
+	model = Post
+	def get_context_data(self, **kwargs):
+
+		# Call the base implementation first to get a context
+		context = super().get_context_data(**kwargs)
+		#Add all the comments for a certain post
+		context['comments_list'] = Comment.objects.filter(blog=self.object)
+		context['form'] = form
+		return context
+
+def SearchPostList(request):
+	"""
+	This function currently produces error if empty search is triggered or
+	search with only empty spaces is send
+	The Function 'Search_Function' was tested for empty and just space strings and
+	it worked fine
+	"""
+
+	#It capture queries from url
+	#(queries start with '?' in url e.g http://localhost:8000/search/?search=my+updated)
+	search_string = request.GET.get('search')
+	all_posts = Post.objects.all()
+	filtered_posts = Search_Function(search_string, all_posts)
+	context = { 'filtered_posts':filtered_posts, 'captured_string':search_string }
+	return render(request, 'blogs_app/search_posts.html', context)
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
-	model = post
+	model = Post
 	fields = ['title', 'content']
 
 	def form_valid(self, form):
@@ -54,7 +135,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
 
 class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-	model = post
+	model = Post
 	fields = ['title', 'content']
 
 	def form_valid(self, form):
@@ -74,7 +155,7 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
 
 class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-	model = post
+	model = Post
 	success_url = '/'  #it will redirect to homepage url after successfully deleting the post
 
 	def test_func(self):
