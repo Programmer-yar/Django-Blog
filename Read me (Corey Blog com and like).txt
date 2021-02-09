@@ -2,18 +2,15 @@ _____________________________________________________________________
 =>Comment and like functionality has been correctly integrated on this 
 version of cblog <=
 ______________________________________________________________________
---------------------------------------------
-->There are problems in search functionality
-->Currently AJAX integration is in process
---------------------------------------------
+
 to check if an object is dictionary or not use
 'isinstance(object, dict)'
 --------------------------------------------------
 forms created by 'forms.py' in django and passed to templates as 'form'
 In template displayed by {{form}} unwraps into labels and inputs html
 elements.Each element has unique ID.
-All the form’s fields and their attributes will be unpacked into HTML 
-markup from that {{ form }} by Django’s template language.
+All the formâ€™s fields and their attributes will be unpacked into HTML 
+markup from that {{ form }} by Djangoâ€™s template language.
 See documentation => https://docs.djangoproject.com/en/3.1/topics/forms/
 -----------------------------------------------------
 I was not able to get unpacked form elements by their ID attribute
