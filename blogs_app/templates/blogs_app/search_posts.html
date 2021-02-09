@@ -3,7 +3,8 @@
 {% block content %}
 	<!-- In Templates context data is accessed by keys -->
   <h2>Search Page</h2>
-  <p>The url returned {{ captured_string }} </p>
+  <p>Showing results for  "{{captured_string}}"  </p>
+  
 	{% for post in filtered_posts %}
 
 	<article class="media content-section">

@@ -1,0 +1,6 @@
+cblog_env/
+__pycache__/
+User data.txt
+Notes.txt
+posts.json
+*.sqlite3

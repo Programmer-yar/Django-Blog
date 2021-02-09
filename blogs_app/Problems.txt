@@ -1,0 +1,4 @@
+1) While implementing commenting functionality using vue and fetch:
+   - Returned JSON response contained just 'id' in the name of author
+     not the full user object and same with post.
+   - Its not possible to read author's name, image path and post's title

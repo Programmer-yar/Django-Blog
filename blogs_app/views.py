@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.views.generic import ( 
 	ListView,
@@ -12,9 +12,9 @@ from django.views.generic import (
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from .models import Post, Comment
-from .modules import Search_Function
 from .forms import CommentForm
-
+from .modules import Search_Function
+from .serializers import CommentSerializer
 
 
 
@@ -55,27 +55,23 @@ def PostDetail(request, pk):
 	post = Post.objects.get(id=pk)
 	current_logged_in_user = request.user
 	comments_list = Comment.objects.filter(blog=post).order_by('-date_added')
+	# comments_list = list(comments_list.values())
 	post_likes = post.likes.count()
 	post_num = pk
 
 	if current_logged_in_user in post.likes.all():
-		user_liked_post = True
+		like_status = 'Unlike'
 	else:
-		user_liked_post = False
-	
+		like_status = 'Like'
+
+	if request.method == 'GET':
+		form = CommentForm()
+
 	#The below if statement handles multiple forms seperatly
 	# the like buttons and comment form
 	if request.method == 'POST':
 		
-		if 'like_button' in request.POST:
-			post.likes.add(current_logged_in_user)
-			return redirect('post-detail', pk=post_num)
-
-		elif request.POST.get('unlike_button'):
-			post.likes.remove(current_logged_in_user)
-			return redirect('post-detail', pk=post_num)
-
-		elif 'comment_button' in request.POST:
+		if 'comment_button' in request.POST:
 
 			form = CommentForm(request.POST)
 			if form.is_valid():
@@ -85,11 +81,11 @@ def PostDetail(request, pk):
 				new_comment.save()
 				return redirect('post-detail', pk=post_num) 
 
-	else:
-		form = CommentForm() 
+	
+	
 
 	context = {'post':post, 'comments_list':comments_list, 'post_likes':post_likes,
-			   'user_liked_post':user_liked_post, 'form':form }
+			   'like_status':like_status, 'form':form } 
 
 	return render(request, 'blogs_app/post_detail.html', context)
 
@@ -107,18 +103,12 @@ class PostDetailView(DetailView):
 		return context
 
 def SearchPostList(request):
-	"""
-	This function currently produces error if empty search is triggered or
-	search with only empty spaces is send
-	The Function 'Search_Function' was tested for empty and just space strings and
-	it worked fine
-	"""
-
+	
 	#It capture queries from url
 	#(queries start with '?' in url e.g http://localhost:8000/search/?search=my+updated)
 	search_string = request.GET.get('search')
-	all_posts = Post.objects.all()
-	filtered_posts = Search_Function(search_string, all_posts)
+	filtered_posts = Post.objects.filter(title__icontains=search_string)
+	#filtered_posts = Search_Function(search_string, all_posts)
 	context = { 'filtered_posts':filtered_posts, 'captured_string':search_string }
 	return render(request, 'blogs_app/search_posts.html', context)
 
@@ -156,7 +146,9 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
 class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 	model = Post
-	success_url = '/'  #it will redirect to homepage url after successfully deleting the post
+
+	#it will redirect to homepage url after successfully deleting the post
+	success_url = '/'  
 
 	def test_func(self):
 		""" 'UserPassesTestMixin' class requires this function to work """

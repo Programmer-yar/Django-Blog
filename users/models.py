@@ -15,10 +15,14 @@ class Profile(models.Model):
 	def save(self, *args, **kwargs):
 		#This method runs after our form is saved
 
+
+		""" 'Positional' and "keyword" arguments (that are captured in url patterns)
+	    are assigned to 'args' and "kwargs" respectively"""
 		#First run the save method of our parent class
 		super(Profile, self).save(*args, **kwargs)
 		"""When you are overriding model's save method in Django,
-		you should also pass *args and **kwargs to overridden method. """
+		you should also pass *args(positional arguments) and **kwargs(keyword arguments) 
+		to overridden method. """
 
 		img = Image.open(self.image.path)
 

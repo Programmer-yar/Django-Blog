@@ -31,10 +31,11 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    #My apps names  
+    #My apps names
     'blogs_app.apps.BlogsAppConfig',
     'users.apps.UsersConfig',
     'crispy_forms',
+    'rest_framework',
 
     #By default
     'django.contrib.admin',

@@ -11,7 +11,9 @@ def register(request):
 		
 		if form.is_valid(): 
 			form.save()
-			username = form.cleaned_data.get('username') #Validated data will be in "form.cleaned" dictionary
+			username = form.cleaned_data.get('username') 
+			#Validated data will be in "form.cleaned" dictionary
+			
 			messages.success(request, f'Hi, {username}, your account was created login to continue!')
 			#return redirect('blog-home')  #'blog-home is the name of url'
 			return redirect('login') 

@@ -24,7 +24,7 @@ class UserUpdateForm(forms.ModelForm):
 
 
 class ProfileUpdateForm(forms.ModelForm):
-	""" As we dod not want to create additional fields we will directly go to "class:Meta" """
+	""" As we do not want to create additional fields we will directly go to "class:Meta" """
 	class Meta:
 		model = Profile
 		fields = ['image']

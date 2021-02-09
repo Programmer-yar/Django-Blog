@@ -1,8 +1,10 @@
 
 {% extends "blogs_app/base.html" %}
 {% load crispy_forms_tags %}
+{% load static %}
 {% block content %}
 
+  <div id="likeComment">
 	<article class="media content-section">
     <img class="rounded-circle article-img" src="{{ post.author.profile.image.url }}">
 		<div class="media-body">
@@ -24,23 +26,19 @@
         
         <h2 class="article-title">{{ post.title }}</h2>
         <p class="article-content">{{ post.content }}</p>
+        <small class="ml-10">Total likes 
+          <span id="totalLikes">[[ postLikes ]]</span>
+        </small> <br>
 
-        <form  method="POST">
-        {% csrf_token %}
+        <!-- <form  method="POST"> -->
 
-        {% if user_liked_post %}
-          <button type="submit" name="unlike_button" value="{{1}}" class="btn btn-primary btn-sm" >Unlike
-          </button>
-          <small class="text-muted">You liked this post</small>
-          <small class="ml-4">Total likes {{post_likes}}</small>
+        {% if user.is_authenticated %}       
+
+          <button type="submit" id="like_unlike_btn" name="unlike_button" class="btn btn-primary btn-sm" @click="likeUnlikePost()" >[[ likeStatus ]]</button>
         
-        {% else %}
-          <button type="submit" name="like_button" value="{{1}}" class="btn btn-primary btn-sm" >Like
-          </button>
-          <small class="ml-4">Total likes {{post_likes}}</small>
         {% endif %}
 
-      </form>
+      <!-- </form> -->
 
     </div>
 
@@ -54,31 +52,137 @@
     <legend class="border-bottom">Comments:</legend>
 
     {% if user.is_authenticated %}
-
-      <form method="POST" >
+      <!-- v-on:submit.prevent="addUpComment()" -->
+      <form method="POST" id="commentForm" >
         {% csrf_token %}
-        
         <fieldset class="form-group">
-          <img class="img-thumbnail article-img" src="{{ user.profile.image.url }}">{{ form|crispy }}
+          <img class="img-thumbnail article-img" src="{{ user.profile.image.url }}">
+          <input type="text" id="commentIn" name="comment" 
+          v-model="currentComment" placeholder="Your comment..." required>
           
-        
+          <button id="commentBtn" name="comment_button"  class="btn btn-outline-info" type="submit">Comment</button>
         </fieldset>
-        <div class="form-group">
-          <button name="comment_button" value="{{1}}" class="btn btn-outline-info" type="submit">Comment</button>
-        </div>
       </form>
+
     {% else %}
+      
       <div>
-        <a class="mb-2 mt-1" href="{% url 'login' %}">Login</a> to comment.<br><br>
+        <a class="mb-2 mt-1" href="{% url 'login' %}">Login</a> to comment.<br>
       </div>
     {% endif %}
-    
-    {% for cmnt in comments_list %}
-    <img class="img-thumbnail article-img" src="{{ cmnt.commentator.profile.image.url }}">
-    <a class="mr-2" >{{ cmnt.commentator }}</a>
-      <p class="article-content">{{ cmnt.comment }}</p>
+
+
+    <!-- <div v-for="cmnt in commentsList">
+      
+        <img class="img-thumbnail article-img" 
+        src='[[ cmnt.commentator.profile.image.url ]]'>
+        <a class="mr-2" > [[cmnt.commentator]] </a>
+        <p class="article-content">  [[cmnt.comment]] </p>
       <hr>
-    {% endfor %}
+      
+    </div> -->
+    
+    <div id="commentDiv">
+      {% for cmnt in comments_list %}
+        <img class="img-thumbnail article-img" 
+        src="{{cmnt.commentator.profile.image.url }}">
+        <a class="mr-2" >{{ cmnt.commentator }}</a>
+        <p class="article-content">{{ cmnt.comment }}</p>
+      <hr>
+      {% endfor %}
+    </div>
 
   </div>
+</div>
 {% endblock content %}
+
+{% block scripts %}
+<script>
+
+  var postDetail = new Vue({
+    el: '#likeComment',
+    delimiters: ['[[', ']]'],
+
+    data: {
+      //captures context data here
+      likeStatus: '{{like_status}}',
+      userId: '{{user.id}}',
+      postId: '{{post.id}}',
+      postLikes: '{{post_likes}}',
+      commentsList: '{{comments_list}}',
+      currentComment:'',
+      
+    },
+
+    methods: {
+      likeUnlikePost() {
+
+        var data = {
+          'userId': this.userId,
+          'postId': this.postId,
+          'likeStatus': this.likeStatus,
+        };
+
+        fetch('/api/like', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(data)
+          })
+
+          //'async and await' keywords are required to resolve promises
+          // need to clear your concept on async, await and promises 
+          .then(async response => {
+            const data = await response.json();
+            console.log(data);
+            this.likeStatus = data['likeStatus'];
+            this.postLikes = data['post_likes'];
+
+          })
+          .catch(function (error) {
+            console.log(error);
+          })
+      },
+
+      addUpComment(){
+        //Problem needs to be solved with this function
+        var data = {
+          'userId': this.userId,
+          'postId': this.postId,
+          'comment': this.currentComment
+        };
+
+        fetch('/api/comment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(data)
+          })
+
+          //'async and await' keywords are required to resolve promises
+          // need to clear your concept on async, await and promises 
+          .then(async response => {
+            const data = await response.json();
+            //The returned response contains id only in place of user and
+            //post objects
+            console.log(data);
+            this.currentComment = '';
+
+          })
+          .catch(function (error) {
+            console.log(error);
+          })
+      },
+
+    },
+
+  })
+</script>
+
+{% endblock %}

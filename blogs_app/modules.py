@@ -1,3 +1,7 @@
+"""
+instead of writing this search function use database queries to perform
+this task 
+"""
 import re
 
 def Search_Function(search_string, data):
