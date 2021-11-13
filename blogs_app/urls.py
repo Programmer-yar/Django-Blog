@@ -20,7 +20,7 @@ urlpatterns = [
     path('user/<str:username>/', UserPostListView.as_view(), name="user-posts"),
 
     #"pk=primary key" PostDetailView expects "pk" variable 
-    path('post/<int:pk>/', views.PostDetail, name="post-detail"),
+    path('post/<int:pk>/', PostDetailView.as_view(), name="post-detail"),
     path('post/new/', PostCreateView.as_view(), name="post-create"),
     path('post/<int:pk>/update/', PostUpdateView.as_view(), name="post-update"),
     path('post/<int:pk>/delete/', PostDeleteView.as_view(), name="post-delete"),
@@ -30,7 +30,7 @@ urlpatterns = [
     path('about/', views.about, name="blog-about"),
 
     #API
-    path('api/like', api_like, name="api_like"),
+    path('api/like/', api_like, name="api_like"),
     path('api/comment', api_comment, name="api_comment"),
 
     #Search URL this url will capture the variable search paased through template

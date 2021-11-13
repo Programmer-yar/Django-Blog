@@ -1,12 +1,15 @@
 import json
 from django.http import JsonResponse
 from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404, redirect
 
 from .models import Post, Comment
 
+@csrf_exempt
 def api_like(request):
-    """ This api function adds like/unlike by a user to the database
+    """
+    This api function adds like/unlike by a user to the database
     and returns response containing
     1)request status
     2)like status
@@ -15,26 +18,24 @@ def api_like(request):
     jsonresponse = {'success':True}
     
     data = json.loads(request.body)
-    like_status = data['likeStatus']
+    # like_status = data['likeStatus']
     user_id = data['userId']
     post_id = data['postId']
 
     post = Post.objects.get(id=post_id)
     user = User.objects.get(id=user_id)
-    
-    print(data)
 
-    if like_status == 'Like':
-        post.likes.add(user)
-        likeStatus = 'Unlike'
-
-    elif like_status == 'Unlike':
+    if user in post.likes.all():
         post.likes.remove(user)
-        likeStatus = 'Like'
+        like_status = 0
+    else:
+        post.likes.add(user)
+        like_status = 1
 
-    post_likes = post.likes.count()
-    jsonresponse['likeStatus'] = likeStatus
-    jsonresponse['post_likes'] = post_likes
+    count = post.likes.count()
+
+    jsonresponse['like_status'] = like_status
+    jsonresponse['count'] = count
     
     return JsonResponse(jsonresponse)
 

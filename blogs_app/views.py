@@ -48,8 +48,7 @@ class UserPostListView(ListView):
 		return Post.objects.filter(author=user).order_by('-date_posted')
 
 
-#Multiple Inheritance is not possible for (Detail and Create) class based views
-# Because both classes expect different template names
+
 def PostDetail(request, pk):
 
 	post = Post.objects.get(id=pk)
@@ -91,16 +90,18 @@ def PostDetail(request, pk):
 
 #The below class based view was replaced by "PostDetail" function based view 
 class PostDetailView(DetailView):
-
 	model = Post
-	def get_context_data(self, **kwargs):
 
+	def get_context_data(self, **kwargs):
 		# Call the base implementation first to get a context
+		status = 0
+		if self.request.user in self.object.likes.all():
+			status = 1
 		context = super().get_context_data(**kwargs)
-		#Add all the comments for a certain post
 		context['comments_list'] = Comment.objects.filter(blog=self.object)
-		context['form'] = form
+		context['status'] = status
 		return context
+
 
 def SearchPostList(request):
 	

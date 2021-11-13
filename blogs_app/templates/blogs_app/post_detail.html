@@ -1,42 +1,60 @@
-
 {% extends "blogs_app/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
+
+{% block style %}
+<style>
+  .bi-star {
+    color: gold;
+  }
+
+  .bi-star-fill {
+    color: gold;
+  }
+  textarea {
+    width: 100%;
+  }
+  .img-comment {
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
-  <div id="likeComment">
+<div id="likeComment">
 	<article class="media content-section">
     <img class="rounded-circle article-img" src="{{ post.author.profile.image.url }}">
 		<div class="media-body">
-        <div class="article-metadata">
-          <a class="mr-2" href="{% url 'user-posts' post.author.username %}">{{ post.author }}</a>
-          <small class="text-muted">{{ post.date_posted | date:"F d, Y" }}</small>
+      <div class="article-metadata">
+        <a class="mr-2" href="{% url 'user-posts' post.author.username %}">{{ post.author }}</a>
+        <small class="text-muted">{{ post.date_posted | date:"F d, Y" }}</small>
 
-          {% if post.author == user %}
-            <div>
-              <!-- 'btn-sm' button small , 'mt-1' margin top 1, 'mb-1' margin bottom 1
-              'btn-secondary' little muted button -->
-            <a class="btn btn-secondary btn-sm mt-1 mb-1" href="{% url 'post-update' post.id %}">update</a>
-            <a class="btn btn-danger btn-sm mt-1 mb-1" href="{% url 'post-delete' post.id %}">Delete</a>
-            
-            </div>
-          {% endif %}
+        {% if post.author == user %}
+          <div>
+            <!-- 'btn-sm' button small , 'mt-1' margin top 1, 'mb-1' margin bottom 1
+            'btn-secondary' little muted button -->
+          <a class="btn btn-secondary btn-sm mt-1 mb-1" href="{% url 'post-update' post.id %}">update</a>
+          <a class="btn btn-danger btn-sm mt-1 mb-1" href="{% url 'post-delete' post.id %}">Delete</a>
+          
+          </div>
+        {% endif %}
 
-        </div>
+      </div>
         
         <h2 class="article-title">{{ post.title }}</h2>
         <p class="article-content">{{ post.content }}</p>
-        <small class="ml-10">Total likes 
-          <span id="totalLikes">{{ post.likes }}</span>
-        </small> <br>
 
-        <!-- <form  method="POST"> -->
+        <!-- <form  method="POST"> -->       
 
-        {% if user.is_authenticated %}       
-
-          <button type="submit" id="like_unlike_btn" name="unlike_button" class="btn btn-primary btn-sm" status="">Like</button>
+        <button type="submit" id="like_unlike_btn" name="unlike_button" class="btn btn-sm" status="{{ status }}" user_id="{{ user.pk }}" post_id="{{ post.pk }}">
+          <i class="bi {% if status %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+          <span id="totalLikes">{{ post.likes.count }}</span>
+        </button>
         
-        {% endif %}
+        
 
       <!-- </form> -->
 
@@ -53,28 +71,36 @@
 
     {% if user.is_authenticated %}
       <!-- v-on:submit.prevent="addUpComment()" -->
-      <form method="POST" id="commentForm" >
+      
+      <form id="commentForm" >
         {% csrf_token %}
         <fieldset class="form-group">
-          <img class="img-thumbnail article-img" src="{{ user.profile.image.url }}">
-          <input type="text" id="commentIn" name="comment" 
-          v-model="currentComment" placeholder="Your comment..." required>
-          
-          <button id="commentBtn" name="comment_button"  class="btn btn-outline-info" type="submit">Comment</button>
+          <div class="row">
+            <!-- <div class="col"></div> -->
+            <div class="col-1 text-right">
+              <img class="img-comment" src="{{ user.profile.image.url }}">
+            </div>
+            <div class="col-9">
+              <textarea type="text" id="commentIn" name="comment" 
+               placeholder="Your comment..." required></textarea> 
+            </div>
+            <div class="col"></div>
+          </div>
+          <div class="row">
+            <div class="col-10 text-right">
+              <button id="commentBtn" name="comment_button"  class="btn btn-outline-info" type="submit">Comment</button>
+            </div>
+            <div class="col"></div>
+          </div>
+          <hr>
         </fieldset>
       </form>
-
-    {% else %}
-      
-      <div>
-        <a class="mb-2 mt-1" href="{% url 'login' %}">Login</a> to comment.<br>
-      </div>
     {% endif %}
 
     
     <div id="commentDiv">
       {% for cmnt in comments_list %}
-        <img class="img-thumbnail article-img" 
+        <img class="img-comment" 
         src="{{cmnt.commentator.profile.image.url }}">
         <a class="mr-2" >{{ cmnt.commentator }}</a>
         <p class="article-content">{{ cmnt.comment }}</p>
@@ -83,12 +109,66 @@
     </div>
 
   </div>
+  <input type="hidden" id="auth" value="{{ user.is_authenticated }}">
 </div>
 {% endblock content %}
 
 {% block scripts %}
 <script>
+  $('#like_unlike_btn').click(function(){
+    /*
+    - changes like button related CSS
+    - collects user and post data and makes API call
+    to add the current user in likes 
+    */
+    if ($("#auth").val() == 'False'){
+      alert("Login to Like");
 
+    } else {
+      var userId, postId, likeStatus, $counter, count;
+      userId = $(this).attr('user_id');
+      postId = $(this).attr('post_id');
+      $counter = $('#totalLikes');
+      count = parseInt($counter.text());
+      likeStatus = $(this).attr('status');
+
+      if(likeStatus == '1'){
+        $(this).find('i').removeClass('bi-star-fill');
+        $(this).find('i').addClass('bi-star');
+        $counter.text(count - 1);
+        $(this).attr('status', 0);
+      } else {
+
+        $(this).find('i').removeClass('bi-star');
+        $(this).find('i').addClass('bi-star-fill');
+        $counter.text(count + 1);
+        $(this).attr('status', 1);
+      }
+      send = {
+        'userId':userId,
+        'postId':postId,
+      }
+
+      fetch('/api/like/',{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'X-CSRFToken': '{{ csrf_token }}'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(send)
+        })
+        .then(async response => {
+          data = await response.json();
+          $counter.text(data.count);
+          console.log(data.success);
+          
+        })
+
+      }
+    
+
+    });
   
 </script>
 
