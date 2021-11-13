@@ -1,4 +1,4 @@
-cblog_env/
+env/
 __pycache__/
 User data.txt
 Notes.txt

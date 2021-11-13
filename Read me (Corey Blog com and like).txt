@@ -13,9 +13,6 @@ All the form’s fields and their attributes will be unpacked into HTML
 markup from that {{ form }} by Django’s template language.
 See documentation => https://docs.djangoproject.com/en/3.1/topics/forms/
 -----------------------------------------------------
-I was not able to get unpacked form elements by their ID attribute
-when I was trying to select them using JQuery.
----------------------------------------------------
 In order to serialize model objects
 from django.core import serializers
 any_objects = any_model.objects.all()[:2]
